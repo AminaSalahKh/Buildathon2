@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔗 Match Game — Biases & Fallacies (Students)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #F0FDF9; color: #1E293B; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .game-wrap { width: 100%; max-width: 760px; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* INTRO */
+  .intro-card { background: #fff; border-radius: 24px; padding: 44px 40px; text-align: center; box-shadow: 0 8px 40px rgba(13,148,136,.12); border: 1px solid #CCFBF1; }
+  .intro-icon { font-size: 3.5rem; margin-bottom: 10px; }
+  .intro-card h1 { font-size: 1.9rem; font-weight: 800; color: #1E293B; margin-bottom: 6px; }
+  .intro-card h1 span { color: #0D9488; }
+  .intro-card p { color: #64748B; font-size: 1rem; line-height: 1.65; margin: 10px 0 28px; }
+  .rules { background: #F0FDF9; border-radius: 14px; padding: 18px 22px; text-align: left; margin-bottom: 28px; }
+  .rules h3 { font-size: .85rem; font-weight: 700; color: #0D9488; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+  .rule { display: flex; align-items: center; gap: 10px; font-size: .92rem; color: #475569; margin-bottom: 8px; }
+  .rule-dot { width: 8px; height: 8px; border-radius: 50%; background: #0D9488; flex-shrink: 0; }
+  .start-btn { background: linear-gradient(135deg, #0D9488, #059669); border: none; border-radius: 50px; color: #fff; font-size: 1.1rem; font-weight: 700; padding: 16px 52px; cursor: pointer; transition: opacity .2s; box-shadow: 0 4px 18px rgba(13,148,136,.35); }
+  .start-btn:hover { opacity: .88; }
+
+  /* HUD */
+  .hud { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; flex-wrap: wrap; }
+  .hud-badge { background: #fff; border: 1px solid #CCFBF1; border-radius: 50px; padding: 6px 16px; font-size: .83rem; font-weight: 600; color: #64748B; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .hud-score { color: #0D9488; font-weight: 800; }
+  .progress-wrap { background: #CCFBF1; border-radius: 10px; height: 6px; margin-bottom: 18px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #0D9488, #059669); border-radius: 10px; transition: width .4s ease; }
+
+  /* ROUND CARD */
+  .round-card { background: #fff; border-radius: 20px; padding: 28px; box-shadow: 0 4px 24px rgba(13,148,136,.10); border: 1px solid #CCFBF1; }
+  .round-badge { display: inline-block; background: #CCFBF1; color: #0F766E; font-size: .72rem; font-weight: 700; letter-spacing: 2px; padding: 4px 14px; border-radius: 50px; text-transform: uppercase; margin-bottom: 14px; }
+  .round-title { font-size: 1.15rem; font-weight: 700; color: #1E293B; margin-bottom: 6px; }
+  .round-instruction { font-size: .88rem; color: #94A3B8; margin-bottom: 20px; }
+
+  .match-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .match-col-label { font-size: .75rem; font-weight: 700; color: #0D9488; letter-spacing: 1px; text-transform: uppercase; padding: 0 0 6px 4px; }
+
+  .term, .def {
+    padding: 14px 16px; border-radius: 12px; font-size: .9rem; cursor: pointer;
+    border: 2px solid #E2E8F0; background: #F8FAFC; transition: all .18s; line-height: 1.45;
+  }
+  .term { font-weight: 700; color: #1E293B; }
+  .def { color: #475569; }
+  .term:hover:not(.matched), .def:hover:not(.matched) { border-color: #0D9488; background: #F0FDF9; }
+  .term.selected { border-color: #F59E0B; background: #FFFBEB; }
+  .def.selected  { border-color: #F59E0B; background: #FFFBEB; }
+  .term.matched, .def.matched { border-color: #10B981; background: #ECFDF5; color: #065F46; cursor: default; font-weight: 600; }
+  .term.wrong-match, .def.wrong-match { border-color: #EF4444; background: #FEF2F2; animation: shake .3s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+  .feedback { margin-top: 16px; padding: 13px 18px; border-radius: 12px; font-size: .9rem; line-height: 1.55; display: none; }
+  .feedback.show { display: block; }
+  .feedback.ok { background: #ECFDF5; border: 1px solid #10B981; color: #065F46; }
+  .feedback.bad { background: #FEF2F2; border: 1px solid #EF4444; color: #991B1B; }
+  .feedback strong { font-weight: 700; }
+
+  .next-btn { margin-top: 14px; width: 100%; background: linear-gradient(135deg,#0D9488,#059669); border: none; border-radius: 12px; color: #fff; font-size: 1rem; font-weight: 700; padding: 14px; cursor: pointer; display: none; transition: opacity .2s; }
+  .next-btn.show { display: block; }
+  .next-btn:hover { opacity: .88; }
+
+  /* RESULT */
+  .result-card { background: #fff; border-radius: 24px; padding: 44px 36px; text-align: center; box-shadow: 0 8px 40px rgba(13,148,136,.12); border: 1px solid #CCFBF1; }
+  .medal { font-size: 4rem; margin-bottom: 8px; }
+  .result-card h2 { font-size: 1.7rem; font-weight: 800; color: #1E293B; margin-bottom: 6px; }
+  .result-pts { font-size: 3.5rem; font-weight: 900; color: #0D9488; margin: 8px 0; }
+  .result-sub { color: #94A3B8; font-size: .95rem; margin-bottom: 22px; }
+  .breakdown { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 28px; }
+  .bd-item { background: #F8FAFC; border-radius: 14px; padding: 16px 10px; border: 1px solid #E2E8F0; }
+  .bd-num { font-size: 1.7rem; font-weight: 800; }
+  .bd-label { font-size: .75rem; color: #94A3B8; margin-top: 4px; }
+  .bd-c .bd-num { color: #10B981; }
+  .bd-w .bd-num { color: #EF4444; }
+  .bd-r .bd-num { color: #0D9488; }
+  .replay-btn { background: linear-gradient(135deg,#0D9488,#059669); border: none; border-radius: 50px; color: #fff; font-size: 1rem; font-weight: 700; padding: 14px 44px; cursor: pointer; transition: opacity .2s; box-shadow: 0 4px 18px rgba(13,148,136,.3); }
+  .replay-btn:hover { opacity: .85; }
+
+  .pts-pop { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 2.5rem; font-weight: 900; color: #0D9488; pointer-events: none; animation: pop .7s forwards; z-index: 999; }
+  @keyframes pop { 0%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-130%) scale(1.4)} }
+</style>
+</head>
+<body>
+<div class="game-wrap">
+
+<!-- INTRO -->
+<div class="screen active" id="s-intro">
+  <div class="intro-card">
+    <div class="intro-icon">🔗</div>
+    <h1>Match<br><span>Game</span></h1>
+    <p>Connect each term to its correct definition.<br>4 rounds covering biases, fallacies and tricky thinking!</p>
+    <div class="rules">
+      <h3>How to Play</h3>
+      <div class="rule"><span class="rule-dot"></span>Click a <strong>term</strong> on the left, then its <strong>definition</strong> on the right</div>
+      <div class="rule"><span class="rule-dot"></span>Correct match = +150 points 🟢</div>
+      <div class="rule"><span class="rule-dot"></span>Wrong match = try again ❌</div>
+      <div class="rule"><span class="rule-dot"></span>Match all 4 to advance to the next round</div>
+    </div>
+    <button class="start-btn" onclick="start()">Start Matching ▶</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="s-game">
+  <div class="hud">
+    <div class="hud-badge">Round <b id="rn">1</b> / <b id="rt">4</b></div>
+    <div class="hud-badge hud-score">⭐ <span id="score">0</span> pts</div>
+    <div class="hud-badge">✅ <span id="matched">0</span>/4 matched</div>
+  </div>
+  <div class="progress-wrap"><div class="progress-fill" id="pbar"></div></div>
+  <div class="round-card">
+    <div class="round-badge">🔗 Match Game</div>
+    <div class="round-title" id="round-title">Round Title</div>
+    <div class="round-instruction">Click a term → then click its matching definition</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px;margin-bottom:6px;">
+      <div class="match-col-label">Terms</div>
+      <div class="match-col-label">Definitions</div>
+    </div>
+    <div class="match-grid" id="mgrid"></div>
+    <div class="feedback" id="fb"></div>
+    <button class="next-btn" id="nbtn" onclick="nextRound()">Next Round →</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="screen" id="s-result">
+  <div class="result-card">
+    <div class="medal" id="medal">🏆</div>
+    <h2 id="rtitle">Well done!</h2>
+    <div class="result-pts" id="rpts">0</div>
+    <div class="result-sub" id="rsub">points earned</div>
+    <div class="breakdown">
+      <div class="bd-item bd-c"><div class="bd-num" id="bc">0</div><div class="bd-label">Correct</div></div>
+      <div class="bd-item bd-w"><div class="bd-num" id="bw">0</div><div class="bd-label">Mistakes</div></div>
+      <div class="bd-item bd-r"><div class="bd-num">4</div><div class="bd-label">Rounds Done</div></div>
+    </div>
+    <button class="replay-btn" onclick="start()">🔄 Play Again</button>
+  </div>
+</div>
+
+</div>
+<script>
+const MATCH_ROUNDS=[
+{title:"Round 1 — Cognitive Bias Types",pairs:[
+  {term:"Confirmation Bias",def:"Only paying attention to things that agree with what you already believe"},
+  {term:"Sunk Cost Fallacy",def:"Continuing something just because of the time or effort already spent on it"},
+  {term:"Dunning-Kruger Effect",def:"Knowing very little about something but feeling very confident about it"},
+  {term:"Anchoring Bias",def:"Letting the first piece of information you see change how you judge everything after it"}
+]},
+{title:"Round 2 — Logical Fallacy Types",pairs:[
+  {term:"Ad Hominem",def:"Attacking the person instead of their actual argument"},
+  {term:"Straw Man",def:"Twisting someone's idea to make it easier to argue against"},
+  {term:"False Dichotomy",def:"Saying there are only two choices when there are really more"},
+  {term:"Slippery Slope",def:"Claiming one small step will lead to extreme, unproven results"}
+]},
+{title:"Round 3 — More Biases & Fallacies",pairs:[
+  {term:"Groupthink",def:"Staying quiet about your real opinion just to fit in with the group"},
+  {term:"Post Hoc Fallacy",def:"Assuming one thing caused another just because it happened first"},
+  {term:"Halo Effect",def:"One good trait makes you assume someone is good at everything else too"},
+  {term:"Circular Reasoning",def:"Using the claim itself as the only proof that the claim is true"}
+]},
+{title:"Round 4 — More Tricky Thinking",pairs:[
+  {term:"Loss Aversion",def:"Losing something feels much worse than gaining the same thing feels good"},
+  {term:"Availability Heuristic",def:"Judging how common something is by how easily examples come to mind"},
+  {term:"Appeal to Popularity",def:"Saying something must be true or good just because lots of people believe it"},
+  {term:"Red Herring",def:"Bringing up something unrelated on purpose to distract from the real topic"}
+]}
+];
+
+let rIndex=0,score=0,totalCorrect=0,totalWrong=0,selTerm=null,selDef=null,matchedCount=0;
+function shuffle(a){return[...a].sort(()=>Math.random()-.5);}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function pop(t){const e=document.createElement('div');e.className='pts-pop';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),750);}
+
+function start(){rIndex=0;score=0;totalCorrect=0;totalWrong=0;show('s-game');renderRound();}
+
+function renderRound(){
+  selTerm=null;selDef=null;matchedCount=0;
+  const r=MATCH_ROUNDS[rIndex];
+  document.getElementById('rn').textContent=rIndex+1;
+  document.getElementById('rt').textContent=MATCH_ROUNDS.length;
+  document.getElementById('score').textContent=score;
+  document.getElementById('matched').textContent=0;
+  document.getElementById('pbar').style.width=((rIndex/MATCH_ROUNDS.length)*100)+'%';
+  document.getElementById('round-title').textContent=r.title;
+  document.getElementById('fb').className='feedback';
+  document.getElementById('nbtn').className='next-btn';
+  const grid=document.getElementById('mgrid');grid.innerHTML='';
+  const sTerms=shuffle(r.pairs),sDefs=shuffle(r.pairs);
+  sTerms.forEach(p=>{const el=document.createElement('div');el.className='term';el.textContent=p.term;el.dataset.term=p.term;el.onclick=()=>clickTerm(el);grid.appendChild(el);});
+  sDefs.forEach(p=>{const el=document.createElement('div');el.className='def';el.textContent=p.def;el.dataset.term=p.term;el.onclick=()=>clickDef(el);grid.appendChild(el);});
+}
+
+function clickTerm(el){
+  if(el.classList.contains('matched'))return;
+  document.querySelectorAll('.term').forEach(t=>t.classList.remove('selected'));
+  el.classList.add('selected');selTerm=el;if(selDef)check();
+}
+function clickDef(el){
+  if(el.classList.contains('matched'))return;
+  document.querySelectorAll('.def').forEach(d=>d.classList.remove('selected'));
+  el.classList.add('selected');selDef=el;if(selTerm)check();
+}
+
+function check(){
+  if(selTerm.dataset.term===selDef.dataset.term){
+    selTerm.classList.remove('selected');selTerm.classList.add('matched');
+    selDef.classList.remove('selected');selDef.classList.add('matched');
+    score+=150;totalCorrect++;matchedCount++;
+    document.getElementById('score').textContent=score;
+    document.getElementById('matched').textContent=matchedCount;
+    pop('+150');selTerm=null;selDef=null;
+    if(matchedCount===4){
+      const fb=document.getElementById('fb');fb.className='feedback ok show';
+      fb.innerHTML='<strong>🎉 Round complete!</strong> All 4 pairs matched correctly. Great job!';
+      document.getElementById('nbtn').className='next-btn show';
+    }
+  } else {
+    selTerm.classList.add('wrong-match');selDef.classList.add('wrong-match');totalWrong++;pop('✗');
+    setTimeout(()=>{selTerm.classList.remove('wrong-match','selected');selDef.classList.remove('wrong-match','selected');selTerm=null;selDef=null;},500);
+  }
+}
+
+function nextRound(){rIndex++;if(rIndex>=MATCH_ROUNDS.length)result();else renderRound();}
+
+function result(){
+  const total=MATCH_ROUNDS.length*4;
+  const pct=Math.round((totalCorrect/total)*100);
+  let medal='🎖️',title='Keep Practicing!';
+  if(pct>=90){medal='🏆';title='Master Matcher!';}
+  else if(pct>=75){medal='🥇';title='Excellent Memory!';}
+  else if(pct>=55){medal='🥈';title='Good Effort!';}
+  document.getElementById('medal').textContent=medal;
+  document.getElementById('rtitle').textContent=title;
+  document.getElementById('rpts').textContent=score;
+  document.getElementById('rsub').textContent=pct+'% accuracy — '+totalCorrect+'/'+total+' correct';
+  document.getElementById('bc').textContent=totalCorrect;
+  document.getElementById('bw').textContent=totalWrong;
+  document.getElementById('pbar').style.width='100%';
+  show('s-result');
+}
+</script>
+</body>
+</html>
